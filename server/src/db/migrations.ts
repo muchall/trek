@@ -4346,6 +4346,18 @@ function runMigrations(db: Database.Database): void {
         );
       `);
     },
+
+    /**
+     * Guestbook v3: an owner-chosen display name shown on their replies.
+     * Defensive ADD COLUMN — schema.ts already carries it on fresh installs, so
+     * only add it where it is missing (avoids a duplicate-column crash).
+     */
+    () => {
+      const cols = db.prepare('PRAGMA table_info(journey_guestbook_settings)').all() as Array<{ name: string }>;
+      if (!cols.some((c) => c.name === 'author_name')) {
+        db.exec('ALTER TABLE journey_guestbook_settings ADD COLUMN author_name TEXT');
+      }
+    },
   ];
 
   if (currentVersion < migrations.length) {

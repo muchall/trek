@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Heart, MessageCircle, Send } from 'lucide-react'
 import { useGuestbook } from './GuestbookProvider'
+import { useTranslation } from '../../../i18n'
 
 function initials(name: string): string {
   return name.trim().slice(0, 1).toUpperCase() || '?'
@@ -19,6 +20,7 @@ function formatWhen(iso: string): string {
  * journey isn't share-scoped) — the owner side has its own component.
  */
 export function GuestbookThread({ entryId }: { entryId: string | number }) {
+  const { t } = useTranslation()
   const gb = useGuestbook()
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState('')
@@ -42,7 +44,7 @@ export function GuestbookThread({ entryId }: { entryId: string | number }) {
       await gb.addComment(entryId, body)
       setDraft('')
     } catch {
-      setError('Could not post your comment. Please try again.')
+      setError(t('journey.guestbook.postError'))
     } finally {
       setBusy(false)
     }
@@ -50,7 +52,7 @@ export function GuestbookThread({ entryId }: { entryId: string | number }) {
 
   const submitLink = async () => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || !name.trim()) {
-      setError('Enter your name and a valid email.')
+      setError(t('journey.guestbook.enterNameEmail'))
       return
     }
     setBusy(true)
@@ -59,7 +61,7 @@ export function GuestbookThread({ entryId }: { entryId: string | number }) {
       await gb.requestLink(email.trim(), name.trim(), website)
       setLinkSent(true)
     } catch {
-      setError('Could not send the link. Please try again.')
+      setError(t('journey.guestbook.linkError'))
     } finally {
       setBusy(false)
     }
@@ -81,7 +83,7 @@ export function GuestbookThread({ entryId }: { entryId: string | number }) {
             if (gb.me) gb.toggleLike(entryId)
             else setOpen(true)
           }}
-          title={gb.me ? '' : 'Verify your email to like'}
+          title={gb.me ? '' : t('journey.guestbook.verifyToLike')}
           className={`inline-flex items-center gap-1.5 transition-colors ${
             state.likedByMe ? 'text-rose-500' : 'text-zinc-500 hover:text-rose-500'
           }`}
@@ -98,7 +100,7 @@ export function GuestbookThread({ entryId }: { entryId: string | number }) {
           className="inline-flex items-center gap-1.5 text-zinc-500 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
         >
           <MessageCircle size={15} />
-          <span>{hasComments ? `${state.comments.length} comments` : 'Comment'}</span>
+          <span>{hasComments ? t('journey.guestbook.commentsCount', { count: state.comments.length }) : t('journey.guestbook.comment')}</span>
         </button>
       </div>
 
@@ -125,7 +127,7 @@ export function GuestbookThread({ entryId }: { entryId: string | number }) {
                     if (gb.me) gb.toggleCommentLike(c.id)
                     else setOpen(true)
                   }}
-                  title={gb.me ? '' : 'Verify your email to like'}
+                  title={gb.me ? '' : t('journey.guestbook.verifyToLike')}
                   className={`mt-1 inline-flex items-center gap-1 text-[11px] transition-colors ${
                     c.likedByMe ? 'text-rose-500' : 'text-zinc-400 hover:text-rose-500'
                   }`}
@@ -139,7 +141,7 @@ export function GuestbookThread({ entryId }: { entryId: string | number }) {
                   <div key={r.id} className="mt-2 border-l-2 border-zinc-200 pl-2.5 dark:border-zinc-700">
                     <div className="text-[11px]">
                       <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                        Author
+                        {t('journey.guestbook.author')}
                       </span>
                       <span className="ml-2 text-zinc-400">{formatWhen(r.created_at)}</span>
                     </div>
@@ -149,18 +151,18 @@ export function GuestbookThread({ entryId }: { entryId: string | number }) {
               </div>
             </div>
           ))}
-          {!hasComments && <div className="text-[12px] text-zinc-400">Be the first to leave a comment.</div>}
+          {!hasComments && <div className="text-[12px] text-zinc-400">{t('journey.guestbook.beFirst')}</div>}
 
           {/* Compose */}
           {!gb.commentsEnabled ? (
-            <div className="text-[12px] italic text-zinc-400">Comments are closed for this journey.</div>
+            <div className="text-[12px] italic text-zinc-400">{t('journey.guestbook.closed')}</div>
           ) : gb.me ? (
             <div className="flex items-end gap-2">
               <textarea
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 rows={2}
-                placeholder={`Comment as ${gb.me.display_name}…`}
+                placeholder={t('journey.guestbook.commentAs', { name: gb.me.display_name })}
                 className="min-h-[38px] flex-1 resize-none rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[13px] outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900"
               />
               <button
@@ -169,16 +171,16 @@ export function GuestbookThread({ entryId }: { entryId: string | number }) {
                 disabled={busy || !draft.trim()}
                 className="inline-flex h-[38px] items-center gap-1 rounded-lg bg-zinc-900 px-3 text-[12px] font-medium text-white disabled:opacity-40 dark:bg-white dark:text-zinc-900"
               >
-                <Send size={13} /> Post
+                <Send size={13} /> {t('journey.guestbook.post')}
               </button>
             </div>
           ) : linkSent ? (
             <div className="rounded-lg bg-emerald-50 px-3 py-2 text-[12px] text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
-              Check your email — we sent you a link to confirm and start commenting.
+              {t('journey.guestbook.linkSent')}
             </div>
           ) : (
             <div className="flex flex-col gap-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
-              <div className="text-[12px] text-zinc-500">Leave a comment — confirm your email once.</div>
+              <div className="text-[12px] text-zinc-500">{t('journey.guestbook.leaveComment')}</div>
               {/* Honeypot: hidden from humans; a bot that fills it is silently dropped. */}
               <input
                 type="text"
@@ -193,14 +195,14 @@ export function GuestbookThread({ entryId }: { entryId: string | number }) {
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Your name"
+                  placeholder={t('journey.guestbook.yourName')}
                   className="w-1/2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[13px] outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900"
                 />
                 <input
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder={t('journey.guestbook.emailPlaceholder')}
                   className="w-1/2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[13px] outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900"
                 />
               </div>
@@ -210,7 +212,7 @@ export function GuestbookThread({ entryId }: { entryId: string | number }) {
                 disabled={busy}
                 className="self-start rounded-lg bg-zinc-900 px-3 py-2 text-[12px] font-medium text-white disabled:opacity-40 dark:bg-white dark:text-zinc-900"
               >
-                Send me the link
+                {t('journey.guestbook.sendLink')}
               </button>
             </div>
           )}

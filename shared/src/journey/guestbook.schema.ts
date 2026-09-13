@@ -25,5 +25,6 @@ export const guestbookAddCommentSchema = z.looseObject({
 });
 
 export const guestbookSettingsSchema = z.looseObject({
-  commentsEnabled: z.unknown(),
+  commentsEnabled: z.unknown().optional(),
+  authorName: z.unknown().optional(),
 });

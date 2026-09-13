@@ -17,6 +17,7 @@ import { normalizeImageFile } from '../../../utils/convertHeic'
 import { copyText } from '../../../utils/clipboard'
 import { pickGradient } from '../../../pages/journeyDetail/JourneyDetailPage.helpers'
 import { journeyCoverSrc } from './mobileJourneyMeta'
+import { GuestbookSettingsSection } from '../../../components/Journey/guestbook/GuestbookSettingsSection'
 
 interface ShareLink {
   token: string
@@ -400,6 +401,11 @@ export default function MJourneySettingsSheet({
             </button>
           </>
         )}
+
+        {/* Guestbook (comments + reply display name) */}
+        <div className="mt-[14px]">
+          <GuestbookSettingsSection journeyId={journey.id} />
+        </div>
 
         {/* Archive */}
         <button type="button" onClick={handleArchiveToggle} disabled={archiving} className={`${solidBtn} mt-[14px] disabled:opacity-40`}>

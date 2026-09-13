@@ -73,7 +73,7 @@ export function OwnerGuestbookProvider({ journeyId, children }: { journeyId: num
 
   const setEnabled = useCallback(
     async (enabled: boolean) => {
-      await guestbookApi.ownerSetSettings(journeyId, enabled)
+      await guestbookApi.ownerSetSettings(journeyId, { commentsEnabled: enabled })
       setCommentsEnabled(enabled)
     },
     [journeyId],

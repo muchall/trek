@@ -1032,8 +1032,8 @@ export const guestbookApi = {
     apiClient.post(`/journeys/${journeyId}/guestbook/comments/${commentId}/replies`, { body }).then(r => r.data),
   ownerDeleteReply: (journeyId: number, replyId: number) =>
     apiClient.delete(`/journeys/${journeyId}/guestbook/replies/${replyId}`).then(r => r.data),
-  ownerSetSettings: (journeyId: number, commentsEnabled: boolean) =>
-    apiClient.put(`/journeys/${journeyId}/guestbook/settings`, { commentsEnabled }).then(r => r.data),
+  ownerSetSettings: (journeyId: number, settings: { commentsEnabled?: boolean; authorName?: string }) =>
+    apiClient.put(`/journeys/${journeyId}/guestbook/settings`, settings).then(r => r.data),
 }
 
 // Photo providers (Immich, Synology Photos, …) behind /api/integrations/memories.

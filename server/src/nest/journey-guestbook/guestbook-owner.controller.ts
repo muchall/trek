@@ -29,6 +29,7 @@ export class GuestbookOwnerController {
     return {
       comments: this.guestbook.listForJourney(journeyId),
       commentsEnabled: this.guestbook.commentsEnabled(journeyId),
+      authorName: this.guestbook.authorName(journeyId),
     };
   }
 
@@ -66,11 +67,22 @@ export class GuestbookOwnerController {
   @Put(':id/guestbook/settings')
   setSettings(@Param('id') id: string, @Body() body: GuestbookSettingsDto, @CurrentUser() user: User) {
     const journeyId = this.requireOwner(id, user);
-    if (typeof body.commentsEnabled !== 'boolean') {
-      throw new HttpException({ error: 'commentsEnabled must be a boolean' }, 400);
+    if (body.commentsEnabled !== undefined) {
+      if (typeof body.commentsEnabled !== 'boolean') {
+        throw new HttpException({ error: 'commentsEnabled must be a boolean' }, 400);
+      }
+      this.guestbook.setCommentsEnabled(journeyId, body.commentsEnabled);
     }
-    this.guestbook.setCommentsEnabled(journeyId, body.commentsEnabled);
-    return { commentsEnabled: body.commentsEnabled };
+    if (body.authorName !== undefined) {
+      if (typeof body.authorName !== 'string') {
+        throw new HttpException({ error: 'authorName must be a string' }, 400);
+      }
+      this.guestbook.setAuthorName(journeyId, body.authorName);
+    }
+    return {
+      commentsEnabled: this.guestbook.commentsEnabled(journeyId),
+      authorName: this.guestbook.authorName(journeyId),
+    };
   }
 
   private requireOwner(id: string, user: User): number {

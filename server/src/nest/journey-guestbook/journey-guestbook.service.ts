@@ -5,6 +5,7 @@ export interface GuestbookReply {
   id: number;
   body: string;
   created_at: string;
+  author_name: string;
 }
 
 export interface GuestbookComment {
@@ -60,12 +61,44 @@ export class JourneyGuestbookService {
     );
   }
 
+  /** The owner-chosen reply name (raw, may be blank), for the settings form. */
+  authorName(journeyId: number): string {
+    const row = this.db.get<{ author_name: string | null }>(
+      'SELECT author_name FROM journey_guestbook_settings WHERE journey_id = ?',
+      journeyId,
+    );
+    return row?.author_name ?? '';
+  }
+
+  setAuthorName(journeyId: number, name: string): void {
+    this.db.run(
+      `INSERT INTO journey_guestbook_settings (journey_id, author_name, updated_at)
+       VALUES (?, ?, strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+       ON CONFLICT(journey_id) DO UPDATE SET author_name = excluded.author_name, updated_at = excluded.updated_at`,
+      journeyId,
+      name.trim().slice(0, 100) || null,
+    );
+  }
+
+  /** The name shown on owner replies: the chosen name, else the account username. */
+  private ownerReplyName(journeyId: number): string {
+    const row = this.db.get<{ name: string }>(
+      `SELECT COALESCE(NULLIF(TRIM(s.author_name), ''), u.username, 'Author') AS name
+       FROM journeys j
+       LEFT JOIN journey_guestbook_settings s ON s.journey_id = j.id
+       LEFT JOIN users u ON u.id = j.user_id
+       WHERE j.id = ?`,
+      journeyId,
+    );
+    return row?.name ?? 'Author';
+  }
+
   /**
    * Attach one-level owner replies + per-comment like tallies to a set of base
    * comment rows in bulk (no N+1). commenterId, when present, marks which
    * comments the current visitor has liked.
    */
-  private enrich<T extends CommentRow>(rows: T[], commenterId: number | null): Array<T & GuestbookComment> {
+  private enrich<T extends CommentRow>(rows: T[], commenterId: number | null, ownerName: string): Array<T & GuestbookComment> {
     if (rows.length === 0) return [];
     const ids = rows.map((r) => r.id);
     const ph = ids.map(() => '?').join(',');
@@ -94,7 +127,7 @@ export class JourneyGuestbookService {
     const repliesByComment = new Map<number, GuestbookReply[]>();
     for (const r of replies) {
       const list = repliesByComment.get(r.comment_id) ?? [];
-      list.push({ id: r.id, body: r.body, created_at: r.created_at });
+      list.push({ id: r.id, body: r.body, created_at: r.created_at, author_name: ownerName });
       repliesByComment.set(r.comment_id, list);
     }
     const countByComment = new Map(counts.map((r) => [r.comment_id, r.n]));
@@ -121,7 +154,7 @@ export class JourneyGuestbookService {
       ? !!this.db.get('SELECT 1 FROM journey_entry_likes WHERE entry_id = ? AND commenter_id = ?', entryId, commenterId)
       : false;
     return {
-      comments: this.enrich(base, commenterId),
+      comments: this.enrich(base, commenterId, this.ownerReplyName(journeyId)),
       likeCount: likeRow?.n ?? 0,
       likedByMe,
       commentsEnabled: this.commentsEnabled(journeyId),
@@ -145,7 +178,7 @@ export class JourneyGuestbookService {
        ORDER BY c.created_at ASC`,
       journeyId,
     );
-    const comments = this.enrich(base, commenterId);
+    const comments = this.enrich(base, commenterId, this.ownerReplyName(journeyId));
     const likeRows = this.db.all<{ entry_id: number; n: number }>(
       `SELECT l.entry_id, COUNT(*) AS n
        FROM journey_entry_likes l JOIN journey_entries je ON je.id = l.entry_id
@@ -188,7 +221,7 @@ export class JourneyGuestbookService {
        WHERE c.id = ?`,
       Number(res.lastInsertRowid),
     );
-    return row ? this.enrich([row], commenterId)[0] : null;
+    return row ? this.enrich([row], commenterId, '')[0] : null;
   }
 
   /** Toggle an entry like: returns the resulting state and fresh count. */
@@ -275,7 +308,7 @@ export class JourneyGuestbookService {
        ORDER BY c.created_at DESC`,
       journeyId,
     );
-    return this.enrich(base, null);
+    return this.enrich(base, null, this.ownerReplyName(journeyId));
   }
 
   /** Soft-delete a comment, but only if it belongs to an entry in this journey. */

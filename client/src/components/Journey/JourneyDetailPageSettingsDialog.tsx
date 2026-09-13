@@ -7,6 +7,7 @@ import { journeyApi } from '../../api/client'
 import { useToast } from '../shared/Toast'
 import ConfirmDialog from '../shared/ConfirmDialog'
 import JourneyShareSection from './JourneyShareSection'
+import { GuestbookSettingsSection } from './guestbook/GuestbookSettingsSection'
 import type { JourneyDetail } from '../../store/journeyStore'
 import { pickGradient } from '../../pages/journeyDetail/JourneyDetailPage.helpers'
 import { AddTripDialog } from './JourneyDetailPageAddTripDialog'
@@ -182,6 +183,9 @@ export function JourneySettingsDialog({ journey, onClose, onSaved, onOpenInvite,
               </span>
             </button>
           </div>
+
+          {/* Guestbook (comments + reply display name) */}
+          <GuestbookSettingsSection journeyId={journey.id} />
 
           </div>
 

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Heart, Reply, Send, Trash2 } from 'lucide-react'
 import { useOwnerGuestbook } from './OwnerGuestbookProvider'
+import { useTranslation } from '../../../i18n'
 import type { GuestbookComment } from './GuestbookProvider'
 
 type OwnerComment = GuestbookComment & { author_email: string }
@@ -23,6 +24,7 @@ function OwnerCommentRow({
   onReply: (id: number, body: string) => Promise<void>
   onDeleteReply: (id: number) => void
 }) {
+  const { t } = useTranslation()
   const [replying, setReplying] = useState(false)
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
@@ -61,7 +63,7 @@ function OwnerCommentRow({
             <div className="min-w-0">
               <div className="text-[11px]">
                 <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                  You
+                  {t('journey.guestbook.you')}
                 </span>
                 <span className="ml-2 text-zinc-400">{formatWhen(r.created_at)}</span>
               </div>
@@ -70,7 +72,7 @@ function OwnerCommentRow({
             <button
               type="button"
               onClick={() => onDeleteReply(r.id)}
-              title="Delete reply"
+              title={t('journey.guestbook.deleteReply')}
               className="flex-shrink-0 rounded-md p-1 text-zinc-300 transition-colors hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-900/20"
             >
               <Trash2 size={13} />
@@ -86,7 +88,7 @@ function OwnerCommentRow({
               onChange={(e) => setDraft(e.target.value)}
               rows={2}
               autoFocus
-              placeholder="Reply…"
+              placeholder={t('journey.guestbook.replyPlaceholder')}
               className="min-h-[34px] flex-1 resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[12px] outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900"
             />
             <button
@@ -95,7 +97,7 @@ function OwnerCommentRow({
               disabled={busy || !draft.trim()}
               className="inline-flex h-[34px] items-center gap-1 rounded-lg bg-zinc-900 px-2.5 text-[11px] font-medium text-white disabled:opacity-40 dark:bg-white dark:text-zinc-900"
             >
-              <Send size={12} /> Send
+              <Send size={12} /> {t('journey.guestbook.send')}
             </button>
           </div>
         ) : (
@@ -104,7 +106,7 @@ function OwnerCommentRow({
             onClick={() => setReplying(true)}
             className="mt-1 inline-flex items-center gap-1 text-[11px] text-zinc-400 transition-colors hover:text-zinc-700 dark:hover:text-zinc-200"
           >
-            <Reply size={12} /> Reply
+            <Reply size={12} /> {t('journey.guestbook.reply')}
           </button>
         )}
       </div>
@@ -112,7 +114,7 @@ function OwnerCommentRow({
       <button
         type="button"
         onClick={() => onDelete(c.id)}
-        title="Delete comment"
+        title={t('journey.guestbook.deleteComment')}
         className="flex-shrink-0 rounded-md p-1 text-zinc-300 transition-colors hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-900/20"
       >
         <Trash2 size={14} />
@@ -128,6 +130,7 @@ function OwnerCommentRow({
  * both the desktop and mobile entry cards.
  */
 export function GuestbookOwnerThread({ entryId }: { entryId: string | number }) {
+  const { t } = useTranslation()
   const owner = useOwnerGuestbook()
   if (!owner) return null
   const comments = owner.forEntry(entryId) as OwnerComment[]
@@ -136,7 +139,7 @@ export function GuestbookOwnerThread({ entryId }: { entryId: string | number }) 
   return (
     <div className="mt-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
       <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
-        <Heart size={11} /> Guest comments · {comments.length}
+        <Heart size={11} /> {t('journey.guestbook.guestCommentsCount', { count: comments.length })}
       </div>
       <div className="flex flex-col gap-3">
         {comments.map((c) => (

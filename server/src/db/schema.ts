@@ -657,6 +657,7 @@ function createTables(db: Database.Database): void {
     CREATE TABLE IF NOT EXISTS journey_guestbook_settings (
       journey_id INTEGER PRIMARY KEY,
       comments_enabled INTEGER NOT NULL DEFAULT 1,
+      author_name TEXT,
       updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
     );
 
