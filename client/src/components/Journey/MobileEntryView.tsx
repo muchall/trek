@@ -5,6 +5,8 @@ import {
   ThumbsUp, ThumbsDown,
 } from 'lucide-react'
 import JournalBody from './JournalBody'
+import { GuestbookThread } from './guestbook/GuestbookThread'
+import { GuestbookOwnerThread } from './guestbook/GuestbookOwnerThread'
 import { useTranslation } from '../../i18n'
 import { formatLocationName } from '../../utils/formatters'
 import type { JourneyEntry, JourneyPhoto } from '../../store/journeyStore'
@@ -264,6 +266,11 @@ export default function MobileEntryView({ entry, readOnly, publicPhotoUrl, onClo
               )}
             </div>
           )}
+
+          {/* Guestbook: public comments+likes on the share view, owner moderation
+              on the authenticated view. Each renders null without its provider. */}
+          <GuestbookThread entryId={entry.id} />
+          <GuestbookOwnerThread entryId={entry.id} />
         </div>
       </div>
     </div >

@@ -75,19 +75,25 @@ export function GuestbookThread({ entryId }: { entryId: string | number }) {
       <div className="flex items-center gap-4 text-[12px]">
         <button
           type="button"
-          onClick={() => gb.me && gb.toggleLike(entryId)}
-          disabled={!gb.me}
+          onClick={(e) => {
+            e.stopPropagation()
+            if (gb.me) gb.toggleLike(entryId)
+            else setOpen(true)
+          }}
           title={gb.me ? '' : 'Verify your email to like'}
           className={`inline-flex items-center gap-1.5 transition-colors ${
             state.likedByMe ? 'text-rose-500' : 'text-zinc-500 hover:text-rose-500'
-          } ${gb.me ? '' : 'cursor-default opacity-70'}`}
+          }`}
         >
           <Heart size={15} fill={state.likedByMe ? 'currentColor' : 'none'} />
           {state.likeCount > 0 && <span>{state.likeCount}</span>}
         </button>
         <button
           type="button"
-          onClick={() => setOpen((o) => !o)}
+          onClick={(e) => {
+            e.stopPropagation()
+            setOpen((o) => !o)
+          }}
           className="inline-flex items-center gap-1.5 text-zinc-500 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
         >
           <MessageCircle size={15} />
