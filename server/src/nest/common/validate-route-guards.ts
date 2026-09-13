@@ -125,6 +125,7 @@ export const PUBLIC_ROUTE_ALLOW_LIST: string[] = [
   'GuestAuthController.verify',
   'GuestbookPublicController.addComment',
   'GuestbookPublicController.like',
+  'GuestbookPublicController.likeComment',
   'GuestbookPublicController.list',
   'GuestbookPublicController.summary',
   'HelpController.asset',
