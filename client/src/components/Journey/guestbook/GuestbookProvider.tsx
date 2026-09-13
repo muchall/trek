@@ -5,6 +5,7 @@ export interface GuestbookReply {
   id: number
   body: string
   created_at: string
+  author_name: string
 }
 
 export interface GuestbookComment {
