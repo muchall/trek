@@ -1016,16 +1016,22 @@ export const guestbookApi = {
   // Public (share-token scoped) — the trek_guest cookie is the write credential.
   summary: (token: string) => apiClient.get(`/public/journey/${token}/guestbook`).then(r => r.data),
   me: (token: string) => apiClient.get(`/public/journey/${token}/guest/me`).then(r => r.data),
-  requestLink: (token: string, email: string, displayName: string) =>
-    apiClient.post(`/public/journey/${token}/guest/request-link`, { email, displayName }).then(r => r.data),
+  requestLink: (token: string, email: string, displayName: string, website = '') =>
+    apiClient.post(`/public/journey/${token}/guest/request-link`, { email, displayName, website }).then(r => r.data),
   addComment: (token: string, entryId: string | number, body: string) =>
     apiClient.post(`/public/journey/${token}/entries/${entryId}/comments`, { body }).then(r => r.data),
   toggleLike: (token: string, entryId: string | number) =>
     apiClient.post(`/public/journey/${token}/entries/${entryId}/like`).then(r => r.data),
+  toggleCommentLike: (token: string, commentId: number) =>
+    apiClient.post(`/public/journey/${token}/comments/${commentId}/like`).then(r => r.data),
   // Owner (authenticated) moderation.
   ownerList: (journeyId: number) => apiClient.get(`/journeys/${journeyId}/guestbook/comments`).then(r => r.data),
   ownerDelete: (journeyId: number, commentId: number) =>
     apiClient.delete(`/journeys/${journeyId}/guestbook/comments/${commentId}`).then(r => r.data),
+  ownerReply: (journeyId: number, commentId: number, body: string) =>
+    apiClient.post(`/journeys/${journeyId}/guestbook/comments/${commentId}/replies`, { body }).then(r => r.data),
+  ownerDeleteReply: (journeyId: number, replyId: number) =>
+    apiClient.delete(`/journeys/${journeyId}/guestbook/replies/${replyId}`).then(r => r.data),
   ownerSetSettings: (journeyId: number, commentsEnabled: boolean) =>
     apiClient.put(`/journeys/${journeyId}/guestbook/settings`, { commentsEnabled }).then(r => r.data),
 }

@@ -75,6 +75,22 @@ export class GuestbookPublicController {
     return this.guestbook.toggleLike(entryId, commenter.id);
   }
 
+  @Post(':token/comments/:commentId/like')
+  likeComment(@Param('token') token: string, @Param('commentId') commentId: string, @Req() req: Request) {
+    const journeyId = this.share.timelineJourneyIdForToken(token);
+    if (journeyId == null) throw new HttpException({ error: 'Not found' }, 404);
+    const commenter = this.requireGuest(req);
+    this.requireOpen(journeyId);
+    const cid = Number(commentId);
+    // The comment must live in the journey this token unlocks, or 404 — a
+    // token cannot like comments on another journey.
+    if (this.guestbook.commentJourneyId(cid) !== journeyId) {
+      throw new HttpException({ error: 'Not found' }, 404);
+    }
+    this.throttle('guestbook-comment-like', commenter, req);
+    return this.guestbook.toggleCommentLike(cid, commenter.id);
+  }
+
   private requireEntry(token: string, entryId: string): number {
     const match = this.share.validateShareTokenForEntry(token, entryId);
     if (!match) throw new HttpException({ error: 'Not found' }, 404);

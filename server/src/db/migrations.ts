@@ -4320,6 +4320,32 @@ function runMigrations(db: Database.Database): void {
         );
       `);
     },
+
+    /**
+     * Guestbook v2: one-level owner replies to guest comments, and per-comment
+     * likes from verified guests. Appended LAST — index-addressed against
+     * schema_version, so it never reorders the tables above.
+     */
+    () => {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS journey_comment_replies (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          comment_id INTEGER NOT NULL REFERENCES journey_entry_comments(id) ON DELETE CASCADE,
+          body TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+          deleted_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_jcr_comment ON journey_comment_replies(comment_id, created_at);
+
+        CREATE TABLE IF NOT EXISTS journey_comment_likes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          comment_id INTEGER NOT NULL REFERENCES journey_entry_comments(id) ON DELETE CASCADE,
+          commenter_id INTEGER NOT NULL REFERENCES journey_commenters(id) ON DELETE CASCADE,
+          created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+          UNIQUE(comment_id, commenter_id)
+        );
+      `);
+    },
   ];
 
   if (currentVersion < migrations.length) {

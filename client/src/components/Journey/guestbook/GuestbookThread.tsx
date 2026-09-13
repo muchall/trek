@@ -26,6 +26,7 @@ export function GuestbookThread({ entryId }: { entryId: string | number }) {
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
   const [linkSent, setLinkSent] = useState(false)
+  const [website, setWebsite] = useState('') // honeypot: humans never fill this
   const [error, setError] = useState<string | null>(null)
 
   if (!gb) return null
@@ -55,7 +56,7 @@ export function GuestbookThread({ entryId }: { entryId: string | number }) {
     setBusy(true)
     setError(null)
     try {
-      await gb.requestLink(email.trim(), name.trim())
+      await gb.requestLink(email.trim(), name.trim(), website)
       setLinkSent(true)
     } catch {
       setError('Could not send the link. Please try again.')
@@ -109,12 +110,42 @@ export function GuestbookThread({ entryId }: { entryId: string | number }) {
               <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-zinc-200 text-[11px] font-semibold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-200">
                 {initials(c.author_name)}
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <div className="text-[12px]">
                   <span className="font-semibold text-zinc-800 dark:text-zinc-100">{c.author_name}</span>
                   <span className="ml-2 text-[11px] text-zinc-400">{formatWhen(c.created_at)}</span>
                 </div>
                 <div className="whitespace-pre-wrap break-words text-[13px] text-zinc-700 dark:text-zinc-300">{c.body}</div>
+
+                {/* Like a comment */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (gb.me) gb.toggleCommentLike(c.id)
+                    else setOpen(true)
+                  }}
+                  title={gb.me ? '' : 'Verify your email to like'}
+                  className={`mt-1 inline-flex items-center gap-1 text-[11px] transition-colors ${
+                    c.likedByMe ? 'text-rose-500' : 'text-zinc-400 hover:text-rose-500'
+                  }`}
+                >
+                  <Heart size={12} fill={c.likedByMe ? 'currentColor' : 'none'} />
+                  {c.likeCount > 0 && <span>{c.likeCount}</span>}
+                </button>
+
+                {/* Owner replies (one level, author-authored) */}
+                {c.replies.map((r) => (
+                  <div key={r.id} className="mt-2 border-l-2 border-zinc-200 pl-2.5 dark:border-zinc-700">
+                    <div className="text-[11px]">
+                      <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                        Author
+                      </span>
+                      <span className="ml-2 text-zinc-400">{formatWhen(r.created_at)}</span>
+                    </div>
+                    <div className="mt-1 whitespace-pre-wrap break-words text-[12px] text-zinc-600 dark:text-zinc-400">{r.body}</div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
@@ -148,6 +179,16 @@ export function GuestbookThread({ entryId }: { entryId: string | number }) {
           ) : (
             <div className="flex flex-col gap-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
               <div className="text-[12px] text-zinc-500">Leave a comment — confirm your email once.</div>
+              {/* Honeypot: hidden from humans; a bot that fills it is silently dropped. */}
+              <input
+                type="text"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                className="hidden"
+              />
               <div className="flex gap-2">
                 <input
                   value={name}

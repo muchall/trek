@@ -1,6 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { guestbookApi } from '../../../api/client'
 
+export interface GuestbookReply {
+  id: number
+  body: string
+  created_at: string
+}
+
 export interface GuestbookComment {
   id: number
   entry_id: number
@@ -8,6 +14,9 @@ export interface GuestbookComment {
   created_at: string
   author_name: string
   commenter_id: number
+  likeCount: number
+  likedByMe: boolean
+  replies: GuestbookReply[]
 }
 
 interface EntryState {
@@ -27,9 +36,10 @@ interface GuestbookCtx {
   me: Me | null
   commentsEnabled: boolean
   forEntry: (entryId: string | number) => EntryState
-  requestLink: (email: string, displayName: string) => Promise<void>
+  requestLink: (email: string, displayName: string, website?: string) => Promise<void>
   addComment: (entryId: string | number, body: string) => Promise<void>
   toggleLike: (entryId: string | number) => Promise<void>
+  toggleCommentLike: (commentId: number) => Promise<void>
 }
 
 const Ctx = createContext<GuestbookCtx | null>(null)
@@ -66,8 +76,8 @@ export function GuestbookProvider({ token, children }: { token: string; children
   const forEntry = useCallback((entryId: string | number) => byEntry[String(entryId)] ?? EMPTY, [byEntry])
 
   const requestLink = useCallback(
-    async (email: string, displayName: string) => {
-      await guestbookApi.requestLink(token, email, displayName)
+    async (email: string, displayName: string, website = '') => {
+      await guestbookApi.requestLink(token, email, displayName, website)
     },
     [token],
   )
@@ -88,9 +98,17 @@ export function GuestbookProvider({ token, children }: { token: string; children
     [token, refresh],
   )
 
+  const toggleCommentLike = useCallback(
+    async (commentId: number) => {
+      await guestbookApi.toggleCommentLike(token, commentId)
+      await refresh()
+    },
+    [token, refresh],
+  )
+
   const value = useMemo<GuestbookCtx>(
-    () => ({ token, me, commentsEnabled, forEntry, requestLink, addComment, toggleLike }),
-    [token, me, commentsEnabled, forEntry, requestLink, addComment, toggleLike],
+    () => ({ token, me, commentsEnabled, forEntry, requestLink, addComment, toggleLike, toggleCommentLike }),
+    [token, me, commentsEnabled, forEntry, requestLink, addComment, toggleLike, toggleCommentLike],
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

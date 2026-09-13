@@ -15,6 +15,9 @@ import { z } from 'zod';
 export const guestbookRequestLinkSchema = z.looseObject({
   email: z.unknown(),
   displayName: z.unknown(),
+  // Honeypot: a hidden field real users never fill. A non-empty value marks a
+  // bot; the handler silently accepts and sends nothing.
+  website: z.unknown().optional(),
 });
 
 export const guestbookAddCommentSchema = z.looseObject({

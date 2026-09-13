@@ -42,6 +42,12 @@ export class GuestAuthController {
       throw new HttpException({ error: 'Not found' }, 404);
     }
 
+    // Honeypot: bots fill hidden fields, humans never see this one. Accept
+    // silently and send nothing, so a bot cannot tell it was filtered.
+    if (String(body.website ?? '').trim() !== '') {
+      return { ok: true };
+    }
+
     const email = String(body.email ?? '').trim().toLowerCase();
     const displayName = String(body.displayName ?? '').trim();
     if (!EMAIL_RE.test(email) || email.length > 254) {
@@ -52,13 +58,14 @@ export class GuestAuthController {
     }
 
     // Rate limit per-IP and per-target-email: this endpoint makes TREK send
-    // mail to an address the caller chose, so it is an abuse surface.
+    // mail to an address the caller chose, so it is an abuse surface. Kept
+    // tight — a real guest verifies once, not a handful of times an hour.
     const ip = req.ip || 'unknown';
     const now = Date.now();
-    if (!this.rl.check('guestbook-link-ip', ip, 10, RL_WINDOW_MS, now)) {
+    if (!this.rl.check('guestbook-link-ip', ip, 5, RL_WINDOW_MS, now)) {
       throw new HttpException({ error: 'Too many requests' }, 429);
     }
-    if (!this.rl.check('guestbook-link-email', email, 5, RL_WINDOW_MS, now)) {
+    if (!this.rl.check('guestbook-link-email', email, 3, RL_WINDOW_MS, now)) {
       throw new HttpException({ error: 'Too many requests' }, 429);
     }
 

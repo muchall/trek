@@ -659,6 +659,23 @@ function createTables(db: Database.Database): void {
       comments_enabled INTEGER NOT NULL DEFAULT 1,
       updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
     );
+
+    CREATE TABLE IF NOT EXISTS journey_comment_replies (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      comment_id INTEGER NOT NULL REFERENCES journey_entry_comments(id) ON DELETE CASCADE,
+      body TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+      deleted_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_jcr_comment ON journey_comment_replies(comment_id, created_at);
+
+    CREATE TABLE IF NOT EXISTS journey_comment_likes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      comment_id INTEGER NOT NULL REFERENCES journey_entry_comments(id) ON DELETE CASCADE,
+      commenter_id INTEGER NOT NULL REFERENCES journey_commenters(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+      UNIQUE(comment_id, commenter_id)
+    );
   `);
 }
 

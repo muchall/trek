@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpException, Param, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { JourneyGuestbookService } from './journey-guestbook.service';
 import { JourneyDomainService } from '../journey/journey-domain.service';
 import { AddonGuard } from '../addons/addon.guard';
@@ -7,7 +7,7 @@ import { ADDON_IDS } from '../../addons';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { User } from '../../types';
-import { GuestbookSettingsDto } from './guestbook.dto';
+import { GuestbookAddCommentDto, GuestbookSettingsDto } from './guestbook.dto';
 
 /**
  * Owner-only guestbook moderation. Same guard chain as JourneyController
@@ -36,6 +36,29 @@ export class GuestbookOwnerController {
   remove(@Param('id') id: string, @Param('commentId') commentId: string, @CurrentUser() user: User) {
     const journeyId = this.requireOwner(id, user);
     const ok = this.guestbook.deleteComment(Number(commentId), journeyId);
+    if (!ok) throw new HttpException({ error: 'Not found' }, 404);
+    return { ok: true };
+  }
+
+  @Post(':id/guestbook/comments/:commentId/replies')
+  reply(
+    @Param('id') id: string,
+    @Param('commentId') commentId: string,
+    @Body() body: GuestbookAddCommentDto,
+    @CurrentUser() user: User,
+  ) {
+    const journeyId = this.requireOwner(id, user);
+    const text = String(body.body ?? '').trim();
+    if (!text) throw new HttpException({ error: 'Reply cannot be empty' }, 400);
+    const reply = this.guestbook.addReply(Number(commentId), journeyId, text);
+    if (!reply) throw new HttpException({ error: 'Not found' }, 404);
+    return { reply };
+  }
+
+  @Delete(':id/guestbook/replies/:replyId')
+  removeReply(@Param('id') id: string, @Param('replyId') replyId: string, @CurrentUser() user: User) {
+    const journeyId = this.requireOwner(id, user);
+    const ok = this.guestbook.deleteReply(Number(replyId), journeyId);
     if (!ok) throw new HttpException({ error: 'Not found' }, 404);
     return { ok: true };
   }

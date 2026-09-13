@@ -11,6 +11,8 @@ interface OwnerCtx {
   commentsEnabled: boolean
   forEntry: (entryId: string | number) => OwnerComment[]
   remove: (commentId: number) => Promise<void>
+  reply: (commentId: number, body: string) => Promise<void>
+  removeReply: (replyId: number) => Promise<void>
   setEnabled: (enabled: boolean) => Promise<void>
 }
 
@@ -53,6 +55,22 @@ export function OwnerGuestbookProvider({ journeyId, children }: { journeyId: num
     [journeyId, refresh],
   )
 
+  const reply = useCallback(
+    async (commentId: number, body: string) => {
+      await guestbookApi.ownerReply(journeyId, commentId, body)
+      await refresh()
+    },
+    [journeyId, refresh],
+  )
+
+  const removeReply = useCallback(
+    async (replyId: number) => {
+      await guestbookApi.ownerDeleteReply(journeyId, replyId)
+      await refresh()
+    },
+    [journeyId, refresh],
+  )
+
   const setEnabled = useCallback(
     async (enabled: boolean) => {
       await guestbookApi.ownerSetSettings(journeyId, enabled)
@@ -62,8 +80,8 @@ export function OwnerGuestbookProvider({ journeyId, children }: { journeyId: num
   )
 
   const value = useMemo<OwnerCtx>(
-    () => ({ journeyId, commentsEnabled, forEntry, remove, setEnabled }),
-    [journeyId, commentsEnabled, forEntry, remove, setEnabled],
+    () => ({ journeyId, commentsEnabled, forEntry, remove, reply, removeReply, setEnabled }),
+    [journeyId, commentsEnabled, forEntry, remove, reply, removeReply, setEnabled],
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
