@@ -116,6 +116,17 @@ export const PUBLIC_ROUTE_ALLOW_LIST: string[] = [
   'FeedsPublicController.userFeed',
   // The download link carries its own short-lived token.
   'FilesDownloadController.download',
+  // Journey guestbook: email-verified public commenters, no TREK session. The
+  // magic-link flow runs before any credential exists; the read/write routes are
+  // share-token validated and (for writes) require the trek_guest cookie,
+  // checked inside the handler. (Sorted with the rest of the list.)
+  'GuestAuthController.me',
+  'GuestAuthController.requestLink',
+  'GuestAuthController.verify',
+  'GuestbookPublicController.addComment',
+  'GuestbookPublicController.like',
+  'GuestbookPublicController.list',
+  'GuestbookPublicController.summary',
   'HelpController.asset',
   'HelpController.index',
   'HelpController.page',

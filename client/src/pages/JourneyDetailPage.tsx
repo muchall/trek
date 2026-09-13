@@ -19,6 +19,7 @@ import { computeJourneyLifecycle } from '../utils/journeyLifecycle'
 import { useJourneyDetail } from './journeyDetail/useJourneyDetail'
 import { createDraftJourneyEntry, pickGradient, groupByDate, formatDate, photoUrl } from './journeyDetail/JourneyDetailPage.helpers'
 import { EntryCard, SkeletonCard, CheckinCard } from '../components/Journey/JourneyDetailPageEntryCard'
+import { OwnerGuestbookProvider } from '../components/Journey/guestbook/OwnerGuestbookProvider'
 import { GalleryView } from '../components/Journey/JourneyDetailPageGalleryView'
 import { EntryEditor } from '../components/Journey/JourneyDetailPageEntryEditor'
 import { AddTripDialog } from '../components/Journey/JourneyDetailPageAddTripDialog'
@@ -117,6 +118,7 @@ function JourneyDetailPageDesktop() {
   ) : null
 
   return (
+    <OwnerGuestbookProvider journeyId={current.id}>
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <Navbar />
 
@@ -662,5 +664,6 @@ function JourneyDetailPageDesktop() {
           rendering underneath and shows through the panel's margin. */}
       <Outlet />
     </div>
+    </OwnerGuestbookProvider>
   )
 }

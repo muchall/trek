@@ -6,6 +6,7 @@ import { useTranslation } from '../../i18n'
 import { pluginsApi } from '../../api/client'
 import { usePluginStore } from '../../store/pluginStore'
 import type { JourneyEntry, JourneyPhoto } from '../../store/journeyStore'
+import { GuestbookOwnerThread } from './guestbook/GuestbookOwnerThread'
 import { MOOD_CONFIG, WEATHER_CONFIG } from '../../pages/journeyDetail/JourneyDetailPage.constants'
 import { photoUrl } from '../../pages/journeyDetail/JourneyDetailPage.helpers'
 import { PhotoGrid } from './JourneyDetailPagePhotoGrid'
@@ -188,6 +189,7 @@ export function EntryCard({ entry, readOnly, onEdit, onDelete, onPhotoClick }: {
             )))}
           </div>
         )}
+        <GuestbookOwnerThread entryId={entry.id} />
       </div>
     </div>
   )

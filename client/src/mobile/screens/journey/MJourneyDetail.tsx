@@ -20,6 +20,8 @@ import MDancingTrek from '../../components/MDancingTrek'
 import MListRow from '../../components/MListRow'
 import MToggle from '../../components/MToggle'
 import MJourneyEntryCard from './MJourneyEntryCard'
+import { OwnerGuestbookProvider } from '../../../components/Journey/guestbook/OwnerGuestbookProvider'
+import { GuestbookOwnerThread } from '../../../components/Journey/guestbook/GuestbookOwnerThread'
 import MJourneyEntrySheet from './MJourneyEntrySheet'
 import MJourneySettingsSheet from './MJourneySettingsSheet'
 
@@ -226,8 +228,9 @@ export default function MJourneyDetail() {
   }
 
   return (
-    // h-dvh, not h-full: the shell stopped providing a definite height (#1809)
-    // and a map on a percentage of an auto-height parent collapses to zero.
+    <OwnerGuestbookProvider journeyId={current.id}>
+    {/* h-dvh, not h-full: the shell stopped providing a definite height (#1809)
+        and a map on a percentage of an auto-height parent collapses to zero. */}
     <div className="relative h-dvh overflow-hidden">
       {/* Integrated map — always mounted, the gallery overlays it */}
       <div className="absolute inset-0 z-0">
@@ -354,6 +357,7 @@ export default function MJourneyDetail() {
               style={{ scrollSnapAlign: 'center' }}
             >
               <MJourneyEntryCard entry={entry} number={i + 1} onClick={() => handleCardTap(entry, i)} />
+              <GuestbookOwnerThread entryId={entry.id} />
             </div>
           ))}
         </div>
@@ -522,5 +526,6 @@ export default function MJourneyDetail() {
         />
       )}
     </div>
+    </OwnerGuestbookProvider>
   )
 }

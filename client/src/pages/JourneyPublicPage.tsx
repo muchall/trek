@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { DAY_COLORS } from '../components/Journey/dayColors';
 import JournalBody from '../components/Journey/JournalBody';
+import { GuestbookProvider } from '../components/Journey/guestbook/GuestbookProvider';
+import { GuestbookThread } from '../components/Journey/guestbook/GuestbookThread';
 import JourneyMap from '../components/Journey/JourneyMap';
 import MobileEntryView from '../components/Journey/MobileEntryView';
 import MobileMapTimeline from '../components/Journey/MobileMapTimeline';
@@ -498,6 +500,9 @@ export default function JourneyPublicPage() {
                           )}
                         </div>
                       )}
+
+                      {/* Guestbook: comments + likes from verified visitors */}
+                      <GuestbookThread entryId={entry.id} />
                     </div>
                   </div>
                 );
@@ -571,6 +576,7 @@ export default function JourneyPublicPage() {
     );
 
   return (
+    <GuestbookProvider token={token!}>
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       {/* Hero */}
       <div
@@ -903,5 +909,6 @@ export default function JourneyPublicPage() {
         />
       )}
     </div>
+    </GuestbookProvider>
   );
 }

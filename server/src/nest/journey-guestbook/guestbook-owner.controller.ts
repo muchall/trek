@@ -1,0 +1,61 @@
+import { Body, Controller, Delete, Get, HttpException, Param, Put, UseGuards } from '@nestjs/common';
+import { JourneyGuestbookService } from './journey-guestbook.service';
+import { JourneyDomainService } from '../journey/journey-domain.service';
+import { AddonGuard } from '../addons/addon.guard';
+import { RequireAddon } from '../addons/require-addon.decorator';
+import { ADDON_IDS } from '../../addons';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../auth/current-user.decorator';
+import type { User } from '../../types';
+import { GuestbookSettingsDto } from './guestbook.dto';
+
+/**
+ * Owner-only guestbook moderation. Same guard chain as JourneyController
+ * (AddonGuard before JwtAuthGuard, per the documented contract) so deletion and
+ * the open/closed toggle can only be performed by an authenticated owner.
+ */
+@Controller('api/journeys')
+@UseGuards(AddonGuard, JwtAuthGuard)
+@RequireAddon(ADDON_IDS.JOURNEY, 'Journey')
+export class GuestbookOwnerController {
+  constructor(
+    private readonly guestbook: JourneyGuestbookService,
+    private readonly journey: JourneyDomainService,
+  ) {}
+
+  @Get(':id/guestbook/comments')
+  list(@Param('id') id: string, @CurrentUser() user: User) {
+    const journeyId = this.requireOwner(id, user);
+    return {
+      comments: this.guestbook.listForJourney(journeyId),
+      commentsEnabled: this.guestbook.commentsEnabled(journeyId),
+    };
+  }
+
+  @Delete(':id/guestbook/comments/:commentId')
+  remove(@Param('id') id: string, @Param('commentId') commentId: string, @CurrentUser() user: User) {
+    const journeyId = this.requireOwner(id, user);
+    const ok = this.guestbook.deleteComment(Number(commentId), journeyId);
+    if (!ok) throw new HttpException({ error: 'Not found' }, 404);
+    return { ok: true };
+  }
+
+  @Put(':id/guestbook/settings')
+  setSettings(@Param('id') id: string, @Body() body: GuestbookSettingsDto, @CurrentUser() user: User) {
+    const journeyId = this.requireOwner(id, user);
+    if (typeof body.commentsEnabled !== 'boolean') {
+      throw new HttpException({ error: 'commentsEnabled must be a boolean' }, 400);
+    }
+    this.guestbook.setCommentsEnabled(journeyId, body.commentsEnabled);
+    return { commentsEnabled: body.commentsEnabled };
+  }
+
+  private requireOwner(id: string, user: User): number {
+    const journeyId = Number(id);
+    if (!this.journey.isOwner(journeyId, user.id)) {
+      // 404 (not 403) so a non-owner cannot probe which journey ids exist.
+      throw new HttpException({ error: 'Not found' }, 404);
+    }
+    return journeyId;
+  }
+}

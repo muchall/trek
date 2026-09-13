@@ -4257,6 +4257,69 @@ function runMigrations(db: Database.Database): void {
         db.exec('ALTER TABLE journey_entries ADD COLUMN stats_excluded INTEGER NOT NULL DEFAULT 0');
       }
     },
+    /**
+     * Journey guestbook (comments + likes from email-verified public guests).
+     *
+     * A "commenter" is a public visitor who verified an email via magic link;
+     * this is deliberately NOT the users table and NOT users.is_guest (which
+     * means a credential-less TREK trip member, a different concept #1362).
+     *
+     * entry_id / journey_id are INTEGER to match the authoritative rebuilt
+     * journeys.id and journey_entries.id (both INTEGER PRIMARY KEY AUTOINCREMENT
+     * — the early migration-87 DDL used TEXT but a later rebuild replaced it).
+     * The public URL carries these ids as strings; SQLite's INTEGER affinity
+     * coerces them on bind, and integer-to-integer joins stay exact.
+     *
+     * Appended LAST: the array is index-addressed against schema_version.
+     */
+    () => {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS journey_commenters (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          email TEXT NOT NULL UNIQUE,
+          display_name TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+          last_seen_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS journey_commenter_magic_tokens (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          email TEXT NOT NULL,
+          display_name TEXT NOT NULL,
+          token_hash TEXT NOT NULL UNIQUE,
+          journey_token TEXT NOT NULL,
+          expires_at TEXT NOT NULL,
+          consumed_at TEXT,
+          created_ip TEXT,
+          created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_jc_magic_email ON journey_commenter_magic_tokens(email);
+
+        CREATE TABLE IF NOT EXISTS journey_entry_comments (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          entry_id INTEGER NOT NULL REFERENCES journey_entries(id) ON DELETE CASCADE,
+          commenter_id INTEGER NOT NULL REFERENCES journey_commenters(id) ON DELETE CASCADE,
+          body TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+          deleted_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_jec_entry ON journey_entry_comments(entry_id, created_at);
+
+        CREATE TABLE IF NOT EXISTS journey_entry_likes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          entry_id INTEGER NOT NULL REFERENCES journey_entries(id) ON DELETE CASCADE,
+          commenter_id INTEGER NOT NULL REFERENCES journey_commenters(id) ON DELETE CASCADE,
+          created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+          UNIQUE(entry_id, commenter_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS journey_guestbook_settings (
+          journey_id INTEGER PRIMARY KEY,
+          comments_enabled INTEGER NOT NULL DEFAULT 1,
+          updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+        );
+      `);
+    },
   ];
 
   if (currentVersion < migrations.length) {

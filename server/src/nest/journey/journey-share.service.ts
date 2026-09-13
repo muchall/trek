@@ -133,6 +133,50 @@ export class JourneyShareService {
     return journey ? { journeyId: row.journey_id, ownerId: photo.owner_id || journey.user_id } : null;
   }
 
+  /**
+   * Resolve a share token + entry id to the journey it belongs to, for the
+   * guestbook write path. Mirrors validateShareTokenForPhoto's discipline:
+   * the timeline must be shared (entry ids are as enumerable as photo ids, so
+   * an entry must stop accepting comments the moment the owner hides the
+   * timeline), and skeleton placeholder entries are never commentable — the
+   * same filter getPublicJourney applies. Returns null on any mismatch.
+   */
+  /** The journey a share token unlocks, or null. Used by the guestbook path. */
+  journeyIdForToken(token: string): number | null {
+    const row = this.db.prepare('SELECT journey_id FROM journey_share_tokens WHERE token = ?').get(token) as
+      | { journey_id: number }
+      | undefined;
+    return row ? row.journey_id : null;
+  }
+
+  /**
+   * The journey a token unlocks ONLY when its timeline is shared — for the
+   * guestbook batch read. Without the flag check, the whole-journey summary
+   * would hand every comment body to anyone holding the token even after the
+   * owner hid the timeline, the same leak validateShareTokenForEntry guards on
+   * the write path.
+   */
+  timelineJourneyIdForToken(token: string): number | null {
+    const row = this.db.prepare('SELECT journey_id, share_timeline FROM journey_share_tokens WHERE token = ?').get(token) as
+      | { journey_id: number; share_timeline: number }
+      | undefined;
+    if (!row || !row.share_timeline) return null;
+    return row.journey_id;
+  }
+
+  validateShareTokenForEntry(token: string, entryId: string): { journeyId: number } | null {
+    const row = this.db.prepare('SELECT journey_id, share_timeline FROM journey_share_tokens WHERE token = ?').get(token) as
+      | { journey_id: number; share_timeline: number }
+      | undefined;
+    if (!row) return null;
+    if (!row.share_timeline) return null;
+    const entry = this.db
+      .prepare("SELECT id FROM journey_entries WHERE id = ? AND journey_id = ? AND type != 'skeleton'")
+      .get(entryId, row.journey_id) as { id: string } | undefined;
+    if (!entry) return null;
+    return { journeyId: row.journey_id };
+  }
+
   validateShareTokenForAsset(token: string, assetId: string): { ownerId: number } | null {
     const row = this.db.prepare('SELECT journey_id, share_gallery FROM journey_share_tokens WHERE token = ?').get(token) as any;
     if (!row) return null;

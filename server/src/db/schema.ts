@@ -612,6 +612,53 @@ function createTables(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_ncp_user ON notification_channel_preferences(user_id);
 
     CREATE TABLE IF NOT EXISTS migrations (id integer PRIMARY KEY AUTOINCREMENT NOT NULL, timestamp bigint NOT NULL, name varchar NOT NULL);
+
+    -- Journey guestbook: comments + likes from email-verified public guests.
+    -- A commenter is NOT a users row (see migrations.ts for the rationale).
+    CREATE TABLE IF NOT EXISTS journey_commenters (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL UNIQUE,
+      display_name TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+      last_seen_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS journey_commenter_magic_tokens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL,
+      display_name TEXT NOT NULL,
+      token_hash TEXT NOT NULL UNIQUE,
+      journey_token TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      consumed_at TEXT,
+      created_ip TEXT,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_jc_magic_email ON journey_commenter_magic_tokens(email);
+
+    CREATE TABLE IF NOT EXISTS journey_entry_comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      entry_id INTEGER NOT NULL REFERENCES journey_entries(id) ON DELETE CASCADE,
+      commenter_id INTEGER NOT NULL REFERENCES journey_commenters(id) ON DELETE CASCADE,
+      body TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+      deleted_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_jec_entry ON journey_entry_comments(entry_id, created_at);
+
+    CREATE TABLE IF NOT EXISTS journey_entry_likes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      entry_id INTEGER NOT NULL REFERENCES journey_entries(id) ON DELETE CASCADE,
+      commenter_id INTEGER NOT NULL REFERENCES journey_commenters(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+      UNIQUE(entry_id, commenter_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS journey_guestbook_settings (
+      journey_id INTEGER PRIMARY KEY,
+      comments_enabled INTEGER NOT NULL DEFAULT 1,
+      updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+    );
   `);
 }
 
