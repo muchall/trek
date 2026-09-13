@@ -141,7 +141,7 @@ export function GuestbookThread({ entryId }: { entryId: string | number }) {
                   <div key={r.id} className="mt-2 border-l-2 border-zinc-200 pl-2.5 dark:border-zinc-700">
                     <div className="text-[11px]">
                       <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                        {t('journey.guestbook.author')}
+                        {r.author_name || t('journey.guestbook.author')}
                       </span>
                       <span className="ml-2 text-zinc-400">{formatWhen(r.created_at)}</span>
                     </div>
